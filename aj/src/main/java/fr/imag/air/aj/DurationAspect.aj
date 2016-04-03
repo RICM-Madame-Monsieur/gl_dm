@@ -19,13 +19,15 @@ public aspect DurationAspect {
             count.put(Thread.currentThread().getId(), 0L);
         }
         count.put(Thread.currentThread().getId(), count.get(Thread.currentThread().getId()) + 1L);
-        globalCount.incrementAndGet();
     }
 
     after() : execution(public void *.run()){
         long endTime=System.nanoTime();
         long delta = endTime-startTime.get(Thread.currentThread().getId());
-        globalDuration.set(globalDuration.get() + delta);
+        synchronized (this) {
+            globalCount.incrementAndGet();
+            globalDuration.set(globalDuration.get() + delta);
+        }
         System.out.println("Call #" + count.get(Thread.currentThread().getId()) + ": Duration=" + delta/1000000);
     }
 
