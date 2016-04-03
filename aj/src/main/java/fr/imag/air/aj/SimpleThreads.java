@@ -59,14 +59,13 @@ public class SimpleThreads {
             }
         }
 
-        ConcurrentHashMap<Long, Long> startTime = new ConcurrentHashMap();
+        long startTime = System.currentTimeMillis();
 
         // create a thread array
         Thread tArray[] = new Thread[NUM_THREADS];
         for(int i=0; i<NUM_THREADS; i++) {
             tArray[i] = new Thread(new MessageLoop());
             threadMessage("Starting MessageLoop thread");
-            startTime.put(tArray[i].getId(), System.currentTimeMillis());
             tArray[i].start();
         }
 
@@ -81,7 +80,7 @@ public class SimpleThreads {
                 // to finish.
                 try {
                     t.join(1000);
-                    if (((System.currentTimeMillis() - startTime.get(t.getId())) > patience)
+                    if (((System.currentTimeMillis() - startTime) > patience)
                             && t.isAlive()) {
                         threadMessage("Tired of waiting!");
                         t.interrupt();
