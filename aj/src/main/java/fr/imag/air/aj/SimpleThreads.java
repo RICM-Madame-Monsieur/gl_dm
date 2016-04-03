@@ -1,6 +1,8 @@
 // From https://docs.oracle.com/javase/tutorial/essential/concurrency/simple.html
 package fr.imag.air.aj;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 public class SimpleThreads {
 
     // Display a message, preceded by
@@ -57,49 +59,41 @@ public class SimpleThreads {
             }
         }
 
+        ConcurrentHashMap<Long, Long> startTime = new ConcurrentHashMap();
+
         // create a thread array
         Thread tArray[] = new Thread[NUM_THREADS];
         for(int i=0; i<NUM_THREADS; i++) {
-            final long finalPatience = patience;
-            tArray[i] = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    Thread thread = new Thread(new MessageLoop());
-                    thread.start();
-
-                    threadMessage("Starting MessageLoop thread");
-                    long startTime = System.currentTimeMillis();
-
-                    threadMessage("Waiting for MessageLoop thread to finish");
-                    // loop until MessageLoop
-                    // thread exits
-                    while (thread.isAlive()) {
-                        threadMessage("Still waiting...");
-                        // Wait maximum of 1 second
-                        // for MessageLoop thread
-                        // to finish.
-                        try {
-                            thread.join(1000);
-                            if (((System.currentTimeMillis() - startTime) > finalPatience)
-                                    && thread.isAlive()) {
-                                threadMessage("Tired of waiting!");
-                                thread.interrupt();
-                                // Shouldn't be long now
-                                // -- wait indefinitely
-                                thread.join();
-                            }
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    threadMessage("Finally!");
-                }
-            });
+            tArray[i] = new Thread(new MessageLoop());
+            threadMessage("Starting MessageLoop thread");
+            startTime.put(tArray[i].getId(), System.currentTimeMillis());
             tArray[i].start();
         }
 
         for(Thread t : tArray){
-            t.join();
+            threadMessage("Waiting for MessageLoop thread to finish");
+            // loop until MessageLoop
+            // thread exits
+            while (t.isAlive()) {
+                threadMessage("Still waiting...");
+                // Wait maximum of 1 second
+                // for MessageLoop thread
+                // to finish.
+                try {
+                    t.join(1000);
+                    if (((System.currentTimeMillis() - startTime.get(t.getId())) > patience)
+                            && t.isAlive()) {
+                        threadMessage("Tired of waiting!");
+                        t.interrupt();
+                        // Shouldn't be long now
+                        // -- wait indefinitely
+                        t.join();
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            threadMessage("Finally!");
         }
     }
 }
