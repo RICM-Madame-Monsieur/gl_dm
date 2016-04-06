@@ -26,8 +26,14 @@ public class SimpleThreads {
                 for (int i = 0;
                      i < importantInfo.length;
                      i++) {
+
+                    // Pause for a random number between 10 and 500 ms
+                    long time = (long)(Math.random() * (500-10)) + 10;
+                    Thread.sleep(time);
+
                     // Pause for 4 seconds
-                    Thread.sleep(4000);
+                    //Thread.sleep(4000);
+
                     // Print a message
                     threadMessage(importantInfo[i]);
                 }
@@ -59,40 +65,61 @@ public class SimpleThreads {
             }
         }
 
-        long startTime = System.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
 
         // create a thread array
         Thread tArray[] = new Thread[NUM_THREADS];
         for(int i=0; i<NUM_THREADS; i++) {
-            tArray[i] = new Thread(new MessageLoop());
-            threadMessage("Starting MessageLoop thread");
+            final long finalPatience = patience;
+
+            // Run and join each MessageLoop threads in parallel
+            // thanks to a new Thread implementing the run method of runnable
+            tArray[i] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Thread t = new Thread(new MessageLoop());
+                    threadMessage("Starting MessageLoop thread");
+                    t.start();
+
+                    threadMessage("Waiting for MessageLoop thread to finish");
+                    // loop until MessageLoop
+                    // thread exits
+                    while (t.isAlive()) {
+                        threadMessage("Still waiting...");
+                        // Wait maximum of 1 second
+                        // for MessageLoop thread
+                        // to finish.
+                        try {
+                            if (((System.currentTimeMillis() - startTime) > finalPatience)
+                                    && t.isAlive()) {
+                                threadMessage("Tired of waiting!");
+                                t.interrupt();
+                                // Shouldn't be long now
+                                // -- wait indefinitely
+
+                                    t.join();
+
+                            }
+                            else{
+                                t.join(1000);
+                            }
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    threadMessage("Finally!");
+                }
+            });
             tArray[i].start();
+
+            // Sleep 1 second in order to shift the start of each thread
+            // this may be useful when you want to see how works
+            // the code for Exercise 2
+            Thread.currentThread().sleep(1000);
         }
 
         for(Thread t : tArray){
-            threadMessage("Waiting for MessageLoop thread to finish");
-            // loop until MessageLoop
-            // thread exits
-            while (t.isAlive()) {
-                threadMessage("Still waiting...");
-                // Wait maximum of 1 second
-                // for MessageLoop thread
-                // to finish.
-                try {
-                    t.join(1000);
-                    if (((System.currentTimeMillis() - startTime) > patience)
-                            && t.isAlive()) {
-                        threadMessage("Tired of waiting!");
-                        t.interrupt();
-                        // Shouldn't be long now
-                        // -- wait indefinitely
-                        t.join();
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            threadMessage("Finally!");
+            t.join();
         }
     }
 }
